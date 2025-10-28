@@ -368,6 +368,209 @@
       .toggle-switch.active::after {
         transform: translateX(25px);
       }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+        }
+
+        #container {
+          border-radius: 15px;
+        }
+
+        .canvas-wrapper {
+          min-height: 300px;
+          padding: 15px;
+        }
+
+        .image-stack {
+          max-height: 60vh;
+        }
+
+        #canvas {
+          max-height: 60vh;
+          border-radius: 8px;
+        }
+
+        .controls-section {
+          padding: 20px 15px;
+        }
+
+        .control-panel {
+          padding: 20px 15px;
+          margin-bottom: 20px;
+        }
+
+        .panel-header h3 {
+          font-size: 16px;
+        }
+
+        .panel-icon {
+          font-size: 20px;
+          margin-right: 8px;
+        }
+
+        .color-grid {
+          grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+          gap: 10px;
+        }
+
+        .button-group {
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .btn {
+          width: 100%;
+          padding: 14px 20px;
+          font-size: 14px;
+        }
+
+        .info {
+          font-size: 13px;
+          padding: 12px;
+        }
+
+        .mask-control {
+          padding: 12px;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 5px;
+        }
+
+        #container {
+          border-radius: 10px;
+        }
+
+        .canvas-wrapper {
+          min-height: 250px;
+          padding: 10px;
+        }
+
+        .image-stack {
+          max-height: 50vh;
+        }
+
+        #canvas {
+          max-height: 50vh;
+        }
+
+        .controls-section {
+          padding: 15px 10px;
+        }
+
+        .control-panel {
+          padding: 15px 10px;
+          margin-bottom: 15px;
+        }
+
+        .panel-header {
+          margin-bottom: 15px;
+        }
+
+        .panel-header h3 {
+          font-size: 14px;
+        }
+
+        .panel-icon {
+          font-size: 18px;
+          margin-right: 6px;
+        }
+
+        .color-grid {
+          grid-template-columns: repeat(5, 1fr);
+          gap: 8px;
+        }
+
+        .color-option {
+          border-radius: 8px;
+          border-width: 2px;
+        }
+
+        .intensity-label {
+          font-size: 12px;
+        }
+
+        .btn {
+          padding: 12px 15px;
+          font-size: 13px;
+          letter-spacing: 0.3px;
+        }
+
+        .info {
+          font-size: 12px;
+          padding: 10px;
+          line-height: 1.5;
+        }
+
+        .toggle-switch {
+          width: 45px;
+          height: 22px;
+        }
+
+        .toggle-switch::after {
+          width: 18px;
+          height: 18px;
+        }
+
+        .toggle-switch.active::after {
+          transform: translateX(23px);
+        }
+      }
+
+      @media (min-width: 1400px) {
+        #container {
+          max-width: 1400px;
+        }
+
+        .canvas-wrapper {
+          min-height: 600px;
+        }
+
+        .image-stack {
+          max-height: 85vh;
+        }
+
+        #canvas {
+          max-height: 85vh;
+        }
+      }
+
+      /* Landscape mode for small devices */
+      @media (max-height: 600px) and (orientation: landscape) {
+        .canvas-wrapper {
+          min-height: 200px;
+        }
+
+        .image-stack {
+          max-height: 70vh;
+        }
+
+        #canvas {
+          max-height: 70vh;
+        }
+
+        .controls-section {
+          padding: 15px;
+        }
+
+        .control-panel {
+          padding: 15px;
+          margin-bottom: 15px;
+        }
+
+        .info {
+          padding: 10px;
+          font-size: 12px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -380,7 +583,7 @@
             <canvas id="maskCanvas"></canvas>
             <canvas id="redCanvas"></canvas>
             <canvas id="whiteCanvas"></canvas>
-            <img id="maskImage" src="Black.png" alt="Mask Overlay" />
+            <img id="maskImage" src="maskImage.png" alt="Mask Overlay" />
             <img id="redImage" src="red.png" alt="Red Mask" />
             <img id="whiteImage" src="white.png" alt="White Mask" />
           </div>
@@ -668,7 +871,7 @@
         };
 
         const timestamp = new Date().getTime();
-        redImg.src = "red.png?v=" + timestamp;
+        redImg.src = "Red.png?v=" + timestamp;
       }
 
       // Load white mask image
@@ -712,7 +915,7 @@
         };
 
         const timestamp = new Date().getTime();
-        whiteImg.src = "white.png?v=" + timestamp;
+        whiteImg.src = "White.png?v=" + timestamp;
       }
       // Load mask image into mask canvas with CORS handling
       function loadMaskImage() {
@@ -1257,8 +1460,8 @@
                 <canvas id="redCanvas"></canvas>
                 <canvas id="whiteCanvas"></canvas>
                 <img id="maskImage" src="Black.png" alt="Mask Overlay" />
-                <img id="redImage" src="red.png" alt="Red Mask" />
-                <img id="whiteImage" src="white.png" alt="White Mask" />
+                <img id="redImage" src="Red.png" alt="Red Mask" />
+                <img id="whiteImage" src="White.png" alt="White Mask" />
               </div>
             `;
             
