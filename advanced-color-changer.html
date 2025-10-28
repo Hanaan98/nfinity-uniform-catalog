@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Advanced Color Changer - Pixel Manipulation</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      #container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+
+      .image-section {
+        position: relative;
+        background: #f8f9fa;
+      }
+
+      .canvas-wrapper {
+        position: relative;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+        padding: 20px;
+        overflow: hidden;
+      }
+
+      .image-stack {
+        position: relative;
+        display: inline-block;
+        max-width: 100%;
+        max-height: 80vh;
+      }
+
+      #sourceImage {
+        display: none;
+      }
+
+      #canvas {
+        display: block;
+        max-width: 100%;
+        max-height: 80vh;
+        width: auto;
+        height: auto;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        position: relative;
+        z-index: 1;
+        object-fit: contain;
+        object-position: center;
+      }
+
+      #maskCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 10px;
+        z-index: 2;
+        pointer-events: none;
+        object-fit: cover;
+        object-position: center;
+      }
+
+      #redCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 10px;
+        z-index: 3;
+        pointer-events: none;
+        object-fit: cover;
+        object-position: center;
+      }
+
+      #whiteCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 10px;
+        z-index: 4;
+        pointer-events: none;
+        object-fit: cover;
+        object-position: center;
+      }
+
+      #maskImage, #redImage, #whiteImage {
+        display: none;
+      }
+      .controls-section {
+        padding: 30px;
+        background: white;
+      }
+
+      .control-panel {
+        margin-bottom: 30px;
+        padding: 25px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+      }
+
+      .panel-header h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 0;
+      }
+
+      .panel-icon {
+        font-size: 24px;
+        margin-right: 12px;
+      }
+
+      .color-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .color-option {
+        aspect-ratio: 1;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 3px solid transparent;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .color-option::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.3) 0%,
+          transparent 100%
+        );
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .color-option:hover::before {
+        opacity: 1;
+      }
+
+      .color-option:hover {
+        transform: translateY(-5px) scale(1.05);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      }
+
+      .color-option.active {
+        border-color: #fff;
+        transform: scale(1.1);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.4),
+          0 8px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .intensity-control {
+        margin-top: 15px;
+      }
+
+      .intensity-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 14px;
+        color: #4a5568;
+        font-weight: 500;
+      }
+
+      .intensity-value {
+        font-weight: 700;
+        color: #667eea;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        height: 8px;
+        border-radius: 5px;
+        background: linear-gradient(to right, #667eea, #764ba2);
+        outline: none;
+        -webkit-appearance: none;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: white;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s;
+      }
+
+      input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: white;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      }
+
+      .button-group {
+        display: flex;
+        gap: 15px;
+        margin-top: 25px;
+      }
+
+      .btn {
+        flex: 1;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .btn-reset {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-reset:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+      }
+
+      .btn-download {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+      }
+
+      .btn-download:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+      }
+
+      .btn-refresh:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.6);
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #667eea;
+        font-size: 18px;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .loading::after {
+        content: "...";
+        animation: pulse 1.5s infinite;
+      }
+
+      .info {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        color: #1976d2;
+        font-size: 14px;
+      }
+
+      .mask-control {
+        background: #fff3e0;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .mask-control label {
+        color: #e65100;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 25px;
+        background: #ccc;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .toggle-switch.active {
+        background: #667eea;
+      }
+
+      .toggle-switch::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 21px;
+        height: 21px;
+        background: white;
+        border-radius: 50%;
+        transition: transform 0.3s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .toggle-switch.active::after {
+        transform: translateX(25px);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div class="image-section">
+        <div class="canvas-wrapper">
+          <div class="image-stack">
+            <img id="sourceImage" src="bgimage.png" alt="Product Image" />
+            <canvas id="canvas"></canvas>
+            <canvas id="maskCanvas"></canvas>
+            <canvas id="redCanvas"></canvas>
+            <canvas id="whiteCanvas"></canvas>
+            <img id="maskImage" src="Black.png" alt="Mask Overlay" />
+            <img id="redImage" src="red.png" alt="Red Mask" />
+            <img id="whiteImage" src="white.png" alt="White Mask" />
+          </div>
+        </div>
+      </div>
+      <div class="controls-section">
+        
+
+        <div class="mask-control">
+          <label> 🎭 <span>Show Mask Overlay</span> </label>
+          <div class="toggle-switch active" id="maskToggle"></div>
+        </div>
+
+        <!-- Primary Color - Controls red.png -->
+        <div class="control-panel">
+          <div class="panel-header">
+            <span class="panel-icon">🔴</span>
+            <h3>Primary Color (Red Mask Layer)</h3>
+          </div>
+          <div class="color-grid" id="primary-colors">
+            <div
+              class="color-option"
+              style="background: #ff6347"
+              data-color="#FF6347"
+              data-layer="primary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #ff4500"
+              data-color="#FF4500"
+              data-layer="primary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #ff8c00"
+              data-color="#FF8C00"
+              data-layer="primary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #ffd700"
+              data-color="#FFD700"
+              data-layer="primary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #32cd32"
+              data-color="#32CD32"
+              data-layer="primary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #00ced1"
+              data-color="#00CED1"
+              data-layer="primary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #1e90ff"
+              data-color="#1E90FF"
+              data-layer="primary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #9370db"
+              data-color="#9370DB"
+              data-layer="primary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #ff1493"
+              data-color="#FF1493"
+              data-layer="primary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #ff69b4"
+              data-color="#FF69B4"
+              data-layer="primary"
+            ></div>
+          </div>
+          <div class="intensity-control">
+            <div class="intensity-label">
+              <span>Intensity</span>
+              <span class="intensity-value" id="primary-value">100%</span>
+            </div>
+            <input
+              type="range"
+              id="primary-intensity"
+              min="0"
+              max="100"
+              value="100"
+            />
+          </div>
+        </div>
+
+        <!-- Secondary Color - Controls maskImage.png (Black.png) -->
+        <div class="control-panel">
+          <div class="panel-header">
+            <span class="panel-icon">⚫</span>
+            <h3>Secondary Color (Black Mask Layer)</h3>
+          </div>
+          <div class="color-grid" id="secondary-colors">
+            <div
+              class="color-option"
+              style="background: #000000"
+              data-color="#000000"
+              data-layer="secondary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #2c3e50"
+              data-color="#2C3E50"
+              data-layer="secondary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #34495e"
+              data-color="#34495E"
+              data-layer="secondary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #8b0000"
+              data-color="#8B0000"
+              data-layer="secondary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #191970"
+              data-color="#191970"
+              data-layer="secondary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #4b0082"
+              data-color="#4B0082"
+              data-layer="secondary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #006400"
+              data-color="#006400"
+              data-layer="secondary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #8b4513"
+              data-color="#8B4513"
+              data-layer="secondary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #ffffff"
+              data-color="#FFFFFF"
+              data-layer="secondary"
+            ></div>
+            <div
+              class="color-option"
+              style="background: #c0c0c0"
+              data-color="#C0C0C0"
+              data-layer="secondary"
+            ></div>
+          </div>
+          <div class="intensity-control">
+            <div class="intensity-label">
+              <span>Intensity</span>
+              <span class="intensity-value" id="secondary-value">100%</span>
+            </div>
+            <input
+              type="range"
+              id="secondary-intensity"
+              min="0"
+              max="100"
+              value="100"
+            />
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button class="btn btn-reset" id="resetBtn">🔄 Reset All</button>
+          <button class="btn btn-refresh" id="refreshBtn" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);">🔁 Refresh Images</button>
+          <button class="btn btn-download" id="downloadBtn">
+            💾 Download Image
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Canvas setup
+      let canvas = document.getElementById("canvas");
+      let ctx = canvas.getContext("2d", { willReadFrequently: true });
+      let maskCanvas = document.getElementById("maskCanvas");
+      let maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
+      let redCanvas = document.getElementById("redCanvas");
+      let redCtx = redCanvas.getContext("2d", { willReadFrequently: true });
+      let whiteCanvas = document.getElementById("whiteCanvas");
+      let whiteCtx = whiteCanvas.getContext("2d", { willReadFrequently: true });
+      
+      const sourceImage = document.getElementById("sourceImage");
+      const maskImage = document.getElementById("maskImage");
+      const redImage = document.getElementById("redImage");
+      const whiteImage = document.getElementById("whiteImage");
+
+      // Store original image data
+      let originalImageData = null;
+      let originalMaskData = null;
+      let originalRedData = null;
+      let originalWhiteData = null;
+
+      // Color settings
+      const colorSettings = {
+        primary: { color: null, intensity: 1.0 },    // For red.png
+        secondary: { color: null, intensity: 1.0 },  // For maskImage.png (Black.png)
+      };
+
+      // Function to position mask canvases over main canvas
+      function positionMaskCanvases() {
+        // Get the computed styles of the main canvas
+        const canvasComputedStyle = window.getComputedStyle(canvas);
+
+        // Position all mask canvases identically
+        const maskCanvases = [maskCanvas, redCanvas, whiteCanvas];
+        
+        maskCanvases.forEach((maskCanv, index) => {
+          maskCanv.style.width = canvasComputedStyle.width;
+          maskCanv.style.height = canvasComputedStyle.height;
+          maskCanv.style.borderRadius = canvasComputedStyle.borderRadius;
+          maskCanv.style.boxShadow = "none";
+          maskCanv.style.position = "absolute";
+          maskCanv.style.top = "0";
+          maskCanv.style.left = "0";
+          // Z-index: maskCanvas=2, redCanvas=3, whiteCanvas=4
+          maskCanv.style.zIndex = (index + 2).toString();
+        });
+
+        console.log("🎭 All mask canvases positioned over main canvas");
+        console.log(
+          "📐 Canvas size:",
+          canvasComputedStyle.width,
+          "x",
+          canvasComputedStyle.height
+        );
+      }
+
+      // Load red mask image
+      function loadRedMaskImage() {
+        console.log("🔴 Loading red mask image...");
+        
+        const redImg = new Image();
+        redImg.crossOrigin = "anonymous";
+        
+        redImg.onload = function () {
+          console.log("✅ Red mask image loaded successfully!");
+          
+          if (redCanvas.width === 0 || redCanvas.height === 0) {
+            redCanvas.width = canvas.width;
+            redCanvas.height = canvas.height;
+            redCanvas.style.width = canvas.style.width;
+            redCanvas.style.height = canvas.style.height;
+          }
+
+          redCtx.clearRect(0, 0, redCanvas.width, redCanvas.height);
+          redCtx.drawImage(
+            redImg,
+            0, 0, redImg.naturalWidth, redImg.naturalHeight,
+            0, 0, redCanvas.width, redCanvas.height
+          );
+
+          try {
+            originalRedData = redCtx.getImageData(0, 0, redCanvas.width, redCanvas.height);
+            console.log("✅ Red mask data captured successfully!");
+          } catch (e) {
+            console.warn("⚠️ Could not capture red mask data:", e.message);
+          }
+
+          redCanvas.style.display = "block";
+          positionMaskCanvases();
+        };
+
+        redImg.onerror = function () {
+          console.warn("⚠️ Could not load red.png mask image");
+          redCanvas.style.display = "none";
+        };
+
+        const timestamp = new Date().getTime();
+        redImg.src = "red.png?v=" + timestamp;
+      }
+
+      // Load white mask image
+      function loadWhiteMaskImage() {
+        console.log("⚪ Loading white mask image...");
+        
+        const whiteImg = new Image();
+        whiteImg.crossOrigin = "anonymous";
+        
+        whiteImg.onload = function () {
+          console.log("✅ White mask image loaded successfully!");
+          
+          if (whiteCanvas.width === 0 || whiteCanvas.height === 0) {
+            whiteCanvas.width = canvas.width;
+            whiteCanvas.height = canvas.height;
+            whiteCanvas.style.width = canvas.style.width;
+            whiteCanvas.style.height = canvas.style.height;
+          }
+
+          whiteCtx.clearRect(0, 0, whiteCanvas.width, whiteCanvas.height);
+          whiteCtx.drawImage(
+            whiteImg,
+            0, 0, whiteImg.naturalWidth, whiteImg.naturalHeight,
+            0, 0, whiteCanvas.width, whiteCanvas.height
+          );
+
+          try {
+            originalWhiteData = whiteCtx.getImageData(0, 0, whiteCanvas.width, whiteCanvas.height);
+            console.log("✅ White mask data captured successfully!");
+          } catch (e) {
+            console.warn("⚠️ Could not capture white mask data:", e.message);
+          }
+
+          whiteCanvas.style.display = "block";
+          positionMaskCanvases();
+        };
+
+        whiteImg.onerror = function () {
+          console.warn("⚠️ Could not load white.png mask image");
+          whiteCanvas.style.display = "none";
+        };
+
+        const timestamp = new Date().getTime();
+        whiteImg.src = "white.png?v=" + timestamp;
+      }
+      // Load mask image into mask canvas with CORS handling
+      function loadMaskImage() {
+        console.log("🎭 Loading mask image...");
+        
+        // Create a new image for the mask to avoid CORS issues
+        const maskImg = new Image();
+        
+        // Set crossOrigin to anonymous
+        maskImg.crossOrigin = "anonymous";
+        
+        maskImg.onload = function () {
+          console.log("✅ Mask image loaded successfully!");
+          
+          // Mask canvas dimensions should already be set to match main canvas
+          if (maskCanvas.width === 0 || maskCanvas.height === 0) {
+            console.warn("⚠️ Mask canvas not properly sized, using main canvas dimensions");
+            maskCanvas.width = canvas.width;
+            maskCanvas.height = canvas.height;
+            maskCanvas.style.width = canvas.style.width;
+            maskCanvas.style.height = canvas.style.height;
+          }
+
+          // Clear mask canvas first
+          maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+
+          // Draw mask image to exactly match the canvas size - this ensures perfect alignment
+          maskCtx.drawImage(
+            maskImg,
+            0, 0, maskImg.naturalWidth, maskImg.naturalHeight,  // Source dimensions
+            0, 0, maskCanvas.width, maskCanvas.height           // Destination dimensions
+          );
+
+          // Store original mask data
+          try {
+            originalMaskData = maskCtx.getImageData(
+              0,
+              0,
+              maskCanvas.width,
+              maskCanvas.height
+            );
+            console.log("✅ Mask data captured successfully!");
+          } catch (e) {
+            console.warn("⚠️ Could not capture mask data:", e.message);
+            console.log("💡 Mask will still display but color changes may not work");
+          }
+
+          // Make sure mask canvas is visible and positioned correctly
+          maskCanvas.style.display = "block";
+          positionMaskCanvases();
+
+          // Load additional mask images
+          loadRedMaskImage();
+          loadWhiteMaskImage();
+
+          console.log("🎭 Mask setup complete!");
+          console.log(`📐 Mask canvas: ${maskCanvas.width}x${maskCanvas.height}`);
+          console.log(`📐 Main canvas: ${canvas.width}x${canvas.height}`);
+          console.log(`📐 Original mask image: ${maskImg.naturalWidth}x${maskImg.naturalHeight}`);
+        };
+
+        maskImg.onerror = function () {
+          console.warn("⚠️ Could not load mask image - trying alternative names...");
+          
+          // Try loading Black.png as fallback
+          const fallbackImg = new Image();
+          fallbackImg.crossOrigin = "anonymous";
+          
+          fallbackImg.onload = function() {
+            console.log("✅ Fallback mask image (Black.png) loaded!");
+            
+            // Set up mask canvas dimensions if not already set
+            if (maskCanvas.width === 0 || maskCanvas.height === 0) {
+              maskCanvas.width = canvas.width;
+              maskCanvas.height = canvas.height;
+              maskCanvas.style.width = canvas.style.width;
+              maskCanvas.style.height = canvas.style.height;
+            }
+
+            // Clear and draw fallback mask
+            maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+            maskCtx.drawImage(
+              fallbackImg,
+              0, 0, fallbackImg.naturalWidth, fallbackImg.naturalHeight,
+              0, 0, maskCanvas.width, maskCanvas.height
+            );
+
+            try {
+              originalMaskData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+              console.log("✅ Fallback mask data captured!");
+            } catch (e) {
+              console.warn("⚠️ Could not capture fallback mask data");
+            }
+
+            maskCanvas.style.display = "block";
+            positionMaskCanvas();
+          };
+          
+          fallbackImg.onerror = function() {
+            console.warn("⚠️ Could not load any mask image (maskImage.png or Black.png)");
+            console.log("💡 Make sure at least one mask image exists in the same directory");
+            console.log("💡 The tool will work without a mask overlay");
+            maskCanvas.style.display = "none";
+            
+            // Create a default mask if both images fail to load
+            if (canvas.width > 0 && canvas.height > 0) {
+              maskCanvas.width = canvas.width;
+              maskCanvas.height = canvas.height;
+              maskCanvas.style.width = canvas.style.width;
+              maskCanvas.style.height = canvas.style.height;
+              
+              // Create a simple default mask (semi-transparent overlay)
+              const gradient = maskCtx.createLinearGradient(0, 0, canvas.width, canvas.height);
+              gradient.addColorStop(0, 'rgba(255, 100, 50, 0.8)');
+              gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.9)');
+              gradient.addColorStop(1, 'rgba(255, 255, 255, 0.7)');
+              
+              maskCtx.fillStyle = gradient;
+              maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+              
+              try {
+                originalMaskData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+                console.log("✅ Default mask created");
+              } catch (e) {
+                console.warn("⚠️ Could not create default mask data");
+              }
+            }
+          };
+          
+          // Try the fallback image with cache-busting
+          fallbackImg.src = "Black.png?v=" + timestamp;
+        };
+
+        // Load the mask image with cache-busting - try maskImage.png first
+        const timestamp = new Date().getTime();
+        maskImg.src = "maskImage.png?v=" + timestamp;
+      }
+
+      // Load image with CORS handling for local files
+      function loadImage() {
+        console.log("🔄 Loading main image...");
+        
+        // Create a new image element to avoid CORS issues
+        const img = new Image();
+        
+        // Set crossOrigin to anonymous to handle CORS
+        img.crossOrigin = "anonymous";
+        
+        img.onload = function () {
+          console.log("✅ Main image loaded successfully!");
+          
+          // Calculate the best fit dimensions while maintaining aspect ratio
+          const imgAspectRatio = img.naturalWidth / img.naturalHeight;
+          const maxWidth = Math.min(800, window.innerWidth * 0.8); // Max 800px or 80% of screen
+          const maxHeight = Math.min(600, window.innerHeight * 0.8); // Max 600px or 80% of screen height
+          
+          let canvasWidth, canvasHeight;
+          
+          // Determine the best fit size
+          if (imgAspectRatio > maxWidth / maxHeight) {
+            // Image is wider - fit to max width
+            canvasWidth = Math.min(maxWidth, img.naturalWidth);
+            canvasHeight = canvasWidth / imgAspectRatio;
+          } else {
+            // Image is taller - fit to max height
+            canvasHeight = Math.min(maxHeight, img.naturalHeight);
+            canvasWidth = canvasHeight * imgAspectRatio;
+          }
+          
+          // Set canvas PIXEL dimensions
+          canvas.width = canvasWidth;
+          canvas.height = canvasHeight;
+          
+          // Set canvas CSS dimensions to match exactly
+          canvas.style.width = canvasWidth + 'px';
+          canvas.style.height = canvasHeight + 'px';
+
+          console.log(`📐 Canvas dimensions set to: ${canvas.width}x${canvas.height}`);
+          console.log(`📐 Original image: ${img.naturalWidth}x${img.naturalHeight}`);
+          console.log(`📐 Aspect ratio: ${imgAspectRatio.toFixed(2)}`);
+
+          // Draw original image to fill the canvas completely
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          // Setup mask canvases with exact same dimensions
+          maskCanvas.width = canvas.width;
+          maskCanvas.height = canvas.height;
+          maskCanvas.style.width = canvasWidth + 'px';
+          maskCanvas.style.height = canvasHeight + 'px';
+
+          redCanvas.width = canvas.width;
+          redCanvas.height = canvas.height;
+          redCanvas.style.width = canvasWidth + 'px';
+          redCanvas.style.height = canvasHeight + 'px';
+
+          whiteCanvas.width = canvas.width;
+          whiteCanvas.height = canvas.height;
+          whiteCanvas.style.width = canvasWidth + 'px';
+          whiteCanvas.style.height = canvasHeight + 'px';
+
+          // Position all mask canvases
+          positionMaskCanvases();
+
+          // Store original image data
+          try {
+            originalImageData = ctx.getImageData(
+              0,
+              0,
+              canvas.width,
+              canvas.height
+            );
+            console.log("✅ Image data captured successfully!");
+            console.log("🎨 Ready for color manipulation!");
+          } catch (e) {
+            console.warn("⚠️ Could not capture image data:", e.message);
+            console.log("💡 This is normal when running from file:// - the tool will still work for display");
+          }
+
+          // Load mask image after main image is loaded
+          loadMaskImage();
+        };
+
+        img.onerror = function (e) {
+          console.error("❌ Failed to load main image (bgimage.png)");
+          console.log("💡 Make sure bgimage.png exists in the same directory");
+          console.log("💡 Try using a local web server (like Live Server extension)");
+          
+          // Show error message to user
+          const canvasWrapper = document.querySelector('.canvas-wrapper');
+          canvasWrapper.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #e74c3c;">
+              <h3>❌ Image Loading Error</h3>
+              <p>Could not load bgimage.png</p>
+              <p style="font-size: 14px; margin-top: 20px;">
+                <strong>Solutions:</strong><br>
+                1. Make sure bgimage.png exists in this folder<br>
+                2. Use VS Code Live Server extension<br>
+                3. Run: python -m http.server 8000
+              </p>
+            </div>
+          `;
+        };
+
+        // Try loading the image with cache-busting
+        const timestamp = new Date().getTime();
+        img.src = "bgimage.png?v=" + timestamp;
+      }
+
+      // Load the images when page is ready
+      loadImage();
+
+      // Handle window resize to reposition masks
+      window.addEventListener("resize", () => {
+        setTimeout(positionMaskCanvases, 100);
+      });
+
+      // Mask toggle functionality
+      document
+        .getElementById("maskToggle")
+        .addEventListener("click", function () {
+          this.classList.toggle("active");
+          const isVisible = this.classList.contains("active");
+          
+          // Toggle all mask canvases
+          maskCanvas.style.display = isVisible ? "block" : "none";
+          redCanvas.style.display = isVisible ? "block" : "none";
+          whiteCanvas.style.display = isVisible ? "block" : "none";
+          
+          console.log(`🎭 All mask canvases ${isVisible ? "shown" : "hidden"}`);
+        });
+
+      // Color selection handlers
+      document.querySelectorAll(".color-option").forEach((option) => {
+        option.addEventListener("click", function () {
+          const color = this.dataset.color;
+          const layer = this.dataset.layer;
+
+          // Remove active class from siblings
+          this.parentElement
+            .querySelectorAll(".color-option")
+            .forEach((opt) => {
+              opt.classList.remove("active");
+            });
+
+          // Add active class
+          this.classList.add("active");
+
+          // Update color settings
+          colorSettings[layer].color = hexToRgb(color);
+
+          console.log(`🎨 ${layer} color changed to ${color}`);
+
+          // Apply color change
+          applyColorChange();
+        });
+      });
+
+      // Intensity sliders
+      const intensitySliders = {
+        primary: document.getElementById("primary-intensity"),
+        secondary: document.getElementById("secondary-intensity"),
+      };
+
+      const intensityValues = {
+        primary: document.getElementById("primary-value"),
+        secondary: document.getElementById("secondary-value"),
+      };
+
+      Object.keys(intensitySliders).forEach((layer) => {
+        intensitySliders[layer].addEventListener("input", function () {
+          const value = this.value;
+          intensityValues[layer].textContent = value + "%";
+          colorSettings[layer].intensity = value / 100;
+          applyColorChange();
+        });
+      });
+
+      // Hex to RGB converter
+      function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result
+          ? {
+              r: parseInt(result[1], 16),
+              g: parseInt(result[2], 16),
+              b: parseInt(result[3], 16),
+            }
+          : null;
+      }
+
+      // Main color replacement function - applies colors only to mask canvas
+      function applyColorChange() {
+        // Handle maskImage.png (Black.png) - ONLY Secondary Color
+        if (!originalMaskData) {
+          console.warn("⚠️ No mask data available yet - trying to create default mask");
+          
+          // Try to create a basic mask if none exists
+          if (canvas.width > 0 && canvas.height > 0) {
+            maskCanvas.width = canvas.width;
+            maskCanvas.height = canvas.height;
+            
+            // Fill with a semi-transparent overlay that can be colored
+            const gradient = maskCtx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, 'rgba(255, 100, 50, 0.8)');  // Orange top
+            gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.9)');     // Black middle
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0.7)'); // White bottom
+            
+            maskCtx.fillStyle = gradient;
+            maskCtx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            try {
+              originalMaskData = maskCtx.getImageData(0, 0, canvas.width, canvas.height);
+              console.log("✅ Created default gradient mask for color testing");
+            } catch (e) {
+              console.warn("⚠️ Could not create mask data:", e.message);
+              return;
+            }
+          } else {
+            console.warn("⚠️ Canvas not ready for color changes");
+            return;
+          }
+        }
+
+        // Create a copy of original mask data
+        const maskData = maskCtx.createImageData(originalMaskData);
+        const data = maskData.data;
+        const original = originalMaskData.data;
+
+        // Process each pixel - ONLY apply SECONDARY color to maskImage.png
+        for (let i = 0; i < data.length; i += 4) {
+          let r = original[i];
+          let g = original[i + 1];
+          let b = original[i + 2];
+          const a = original[i + 3];
+
+          // Only process non-transparent pixels
+          if (a > 0) {
+            // Calculate brightness
+            const brightness = (r + g + b) / 3;
+
+            // SECONDARY COLOR ONLY (Black/Dark areas)
+            // Detects: low brightness pixels
+            if (colorSettings.secondary.color && brightness < 80) {
+              const intensity = colorSettings.secondary.intensity;
+              const factor = brightness / 80; // Preserve brightness variation
+              r =
+                r * (1 - intensity) +
+                colorSettings.secondary.color.r * intensity * factor;
+              g =
+                g * (1 - intensity) +
+                colorSettings.secondary.color.g * intensity * factor;
+              b =
+                b * (1 - intensity) +
+                colorSettings.secondary.color.b * intensity * factor;
+            }
+          }
+
+          // Set modified pixel
+          data[i] = Math.min(255, Math.max(0, r));
+          data[i + 1] = Math.min(255, Math.max(0, g));
+          data[i + 2] = Math.min(255, Math.max(0, b));
+          data[i + 3] = a; // Preserve alpha
+        }
+
+        // Draw modified mask image
+        try {
+          maskCtx.putImageData(maskData, 0, 0);
+          console.log("🎨 Secondary color applied to maskCanvas");
+        } catch (e) {
+          console.warn("⚠️ Could not apply color changes:", e.message);
+        }
+
+        // Handle red.png - ONLY Primary Color
+        if (!originalRedData) {
+          return; // No red mask data yet
+        }
+
+        // Create a copy of original red mask data
+        const redData = redCtx.createImageData(originalRedData);
+        const redDataArray = redData.data;
+        const originalRed = originalRedData.data;
+
+        // Process each pixel in red.png - ONLY apply PRIMARY color
+        for (let i = 0; i < redDataArray.length; i += 4) {
+          let r = originalRed[i];
+          let g = originalRed[i + 1];
+          let b = originalRed[i + 2];
+          const a = originalRed[i + 3];
+
+          // Only process non-transparent pixels
+          if (a > 0) {
+            // Calculate brightness to preserve variation
+            const brightness = (r + g + b) / 3;
+            
+            // Apply PRIMARY color to ALL non-transparent pixels with brightness preservation
+            if (colorSettings.primary.color) {
+              const intensity = colorSettings.primary.intensity;
+              
+              // Normalize brightness factor - use the actual pixel brightness
+              // instead of dividing by 255 to maintain color vibrancy
+              const factor = Math.max(0.3, brightness / 255); // Minimum 30% to avoid too dark
+              
+              r = r * (1 - intensity) + colorSettings.primary.color.r * intensity * factor;
+              g = g * (1 - intensity) + colorSettings.primary.color.g * intensity * factor;
+              b = b * (1 - intensity) + colorSettings.primary.color.b * intensity * factor;
+            }
+          }
+
+          // Set modified pixel
+          redDataArray[i] = Math.min(255, Math.max(0, r));
+          redDataArray[i + 1] = Math.min(255, Math.max(0, g));
+          redDataArray[i + 2] = Math.min(255, Math.max(0, b));
+          redDataArray[i + 3] = a; // Preserve alpha
+        }
+
+        // Draw modified red mask image
+        try {
+          redCtx.putImageData(redData, 0, 0);
+          console.log("🎨 Primary color applied to redCanvas");
+        } catch (e) {
+          console.warn("⚠️ Could not apply color changes to red canvas:", e.message);
+        }
+      }
+
+      // Reset button
+      document
+        .getElementById("resetBtn")
+        .addEventListener("click", function () {
+          console.log("🔄 Resetting all colors...");
+
+          // Reset color settings
+          colorSettings.primary.color = null;
+          colorSettings.secondary.color = null;
+          colorSettings.primary.intensity = 1;
+          colorSettings.secondary.intensity = 1;
+
+          // Reset sliders
+          Object.keys(intensitySliders).forEach((layer) => {
+            intensitySliders[layer].value = 100;
+            intensityValues[layer].textContent = "100%";
+          });
+
+          // Remove active classes
+          document.querySelectorAll(".color-option").forEach((opt) => {
+            opt.classList.remove("active");
+          });
+
+          // Restore original masks
+          if (originalMaskData) {
+            maskCtx.putImageData(originalMaskData, 0, 0);
+          }
+          if (originalRedData) {
+            redCtx.putImageData(originalRedData, 0, 0);
+          }
+          if (originalWhiteData) {
+            whiteCtx.putImageData(originalWhiteData, 0, 0);
+          }
+        });
+
+      // Refresh button - reloads images to pick up changes
+      document
+        .getElementById("refreshBtn")
+        .addEventListener("click", function () {
+          console.log("🔁 Refreshing images...");
+          
+          // Show loading message
+          const canvasWrapper = document.querySelector('.canvas-wrapper');
+          const originalContent = canvasWrapper.innerHTML;
+          canvasWrapper.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #667eea;">
+              <h3>🔁 Refreshing Images...</h3>
+              <p>Loading updated images from disk...</p>
+            </div>
+          `;
+          
+          // Clear existing data
+          originalImageData = null;
+          originalMaskData = null;
+          originalRedData = null;
+          originalWhiteData = null;
+          
+          // Reset color settings
+          colorSettings.primary.color = null;
+          colorSettings.secondary.color = null;
+          
+          // Reset UI
+          Object.keys(intensitySliders).forEach((layer) => {
+            intensitySliders[layer].value = 100;
+            intensityValues[layer].textContent = "100%";
+          });
+          
+          document.querySelectorAll(".color-option").forEach((opt) => {
+            opt.classList.remove("active");
+          });
+          
+          // Restore original canvas wrapper content and reload images
+          setTimeout(() => {
+            canvasWrapper.innerHTML = `
+              <div class="image-stack">
+                <img id="sourceImage" src="bgimage.png" alt="Product Image" />
+                <canvas id="canvas"></canvas>
+                <canvas id="maskCanvas"></canvas>
+                <canvas id="redCanvas"></canvas>
+                <canvas id="whiteCanvas"></canvas>
+                <img id="maskImage" src="Black.png" alt="Mask Overlay" />
+                <img id="redImage" src="red.png" alt="Red Mask" />
+                <img id="whiteImage" src="white.png" alt="White Mask" />
+              </div>
+            `;
+            
+            // Reinitialize canvas references
+            const newCanvas = document.getElementById("canvas");
+            const newMaskCanvas = document.getElementById("maskCanvas");
+            const newRedCanvas = document.getElementById("redCanvas");
+            const newWhiteCanvas = document.getElementById("whiteCanvas");
+            
+            // Update global references
+            canvas = newCanvas;
+            maskCanvas = newMaskCanvas;
+            redCanvas = newRedCanvas;
+            whiteCanvas = newWhiteCanvas;
+            ctx = canvas.getContext("2d", { willReadFrequently: true });
+            maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
+            redCtx = redCanvas.getContext("2d", { willReadFrequently: true });
+            whiteCtx = whiteCanvas.getContext("2d", { willReadFrequently: true });
+            
+            // Reload images with fresh cache-busting
+            loadImage();
+          }, 500);
+        });
+
+      // Download button - creates composite of all layers
+      document
+        .getElementById("downloadBtn")
+        .addEventListener("click", function () {
+          // Create a composite canvas
+          const compositeCanvas = document.createElement("canvas");
+          const compositeCtx = compositeCanvas.getContext("2d");
+
+          // Set size to match the original images
+          compositeCanvas.width = canvas.width;
+          compositeCanvas.height = canvas.height;
+
+          // Draw layers in correct z-index order
+          // 1. Background image (z-index: 1)
+          compositeCtx.drawImage(canvas, 0, 0);
+
+          // 2. Mask image (z-index: 2)
+          if (maskCanvas.style.display !== "none") {
+            compositeCtx.drawImage(maskCanvas, 0, 0);
+          }
+
+          // 3. Red mask (z-index: 3)
+          if (redCanvas.style.display !== "none") {
+            compositeCtx.drawImage(redCanvas, 0, 0);
+          }
+
+          // 4. White mask (z-index: 4)
+          if (whiteCanvas.style.display !== "none") {
+            compositeCtx.drawImage(whiteCanvas, 0, 0);
+          }
+
+          const link = document.createElement("a");
+          const timestamp = new Date().toISOString().slice(0, 10);
+          link.download = `custom-product-${timestamp}.png`;
+          link.href = compositeCanvas.toDataURL("image/png");
+          link.click();
+          console.log("💾 Composite image with all layers downloaded!");
+        });
+
+      console.log("🚀 Advanced Color Changer initialized!");
+      console.log("📝 How to use:");
+      console.log("   1. Click color swatches to change different parts");
+      console.log("   2. Use intensity sliders for fine control");
+      console.log("   3. Download your customized image");
+    </script>
+  </body>
+</html>
